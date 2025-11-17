@@ -53,8 +53,8 @@ export default function RakeController() {
 
       const state = useGardenStore.getState()
 
-      // Don't start raking if rake is not active or if an asset is being dragged
-      if (!state.isRakeActive || state.isDraggingAsset) return
+      // Don't start raking if rake tool is not selected or if an asset is being dragged
+      if (state.mainTool !== 'rake' || state.isDraggingAsset) return
 
       raycaster.current.setFromCamera(mouse.current, camera)
 

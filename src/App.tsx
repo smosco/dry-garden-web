@@ -1,6 +1,7 @@
 import ZenGarden from './components/ZenGarden'
 import Controls from './components/Controls'
 import AssetPalette from './components/AssetPalette'
+import Toolbar from './components/Toolbar'
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <ZenGarden />
       <AssetPalette />
       <Controls />
+      <Toolbar />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import RakeController from './RakeController'
 import RakePatterns from './RakePatterns'
 import DraggableAsset from './DraggableAsset'
 import AssetRenderer from './AssetRenderer'
+import GridHelper from './GridHelper'
 import { useGardenStore } from '../stores/useGardenStore'
 
 /**
@@ -15,7 +16,7 @@ import { useGardenStore } from '../stores/useGardenStore'
  * Provides the canvas, camera, lighting, and controls for the zen garden experience
  */
 export default function ZenGarden() {
-  const { assets, selectAsset } = useGardenStore()
+  const { assets, selectAsset, mainTool } = useGardenStore()
 
   // Deselect asset when clicking on ground
   const handleGroundClick = () => {
@@ -58,8 +59,9 @@ export default function ZenGarden() {
       {/* Environment map for realistic reflections */}
       <Environment preset="sunset" />
 
-      {/* Camera controls - orbit around the garden */}
+      {/* Camera controls - orbit around the garden (only active when hand tool is selected) */}
       <OrbitControls
+        enabled={mainTool === 'hand'}
         enableDamping
         dampingFactor={0.05}
         minDistance={5}
@@ -70,6 +72,9 @@ export default function ZenGarden() {
 
       {/* Zen garden sand ground */}
       <Ground />
+
+      {/* Grid helper for asset placement */}
+      <GridHelper />
 
       {/* Rake patterns on the sand */}
       <RakePatterns />

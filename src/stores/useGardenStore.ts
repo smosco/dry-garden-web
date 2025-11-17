@@ -31,29 +31,38 @@ export interface GardenAsset {
 export type ToolType = 'straight' | 'circular' | 'wave'
 
 /**
+ * MainToolType - Main tool selection (hand for navigation, rake for patterns, move for asset placement)
+ */
+export type MainToolType = 'hand' | 'move' | 'rake'
+
+/**
  * GardenStore - Global state for zen garden
  */
 interface GardenStore {
+  // Tool state
+  mainTool: MainToolType
+  currentRakeTool: ToolType
+
   // Rake state
   isRaking: boolean
-  isRakeActive: boolean
   rakePosition: THREE.Vector3
   rakePaths: RakePath[]
   currentPath: THREE.Vector3[]
-  currentTool: ToolType
 
   // Asset state
   assets: GardenAsset[]
   selectedAssetId: string | null
   isDraggingAsset: boolean
 
+  // Tool actions
+  setMainTool: (tool: MainToolType) => void
+  setRakeTool: (tool: ToolType) => void
+
   // Rake actions
   startRaking: (position: THREE.Vector3) => void
   updateRaking: (position: THREE.Vector3) => void
   stopRaking: () => void
   clearPaths: () => void
-  setTool: (tool: ToolType) => void
-  toggleRake: () => void
 
   // Asset actions
   addAsset: (type: AssetType, position: [number, number, number]) => void
@@ -63,13 +72,15 @@ interface GardenStore {
 }
 
 export const useGardenStore = create<GardenStore>((set) => ({
+  // Initial state - Tools
+  mainTool: 'hand',
+  currentRakeTool: 'straight',
+
   // Initial state - Rake
   isRaking: false,
-  isRakeActive: false,
   rakePosition: new THREE.Vector3(0, 0, 0),
   rakePaths: [],
   currentPath: [],
-  currentTool: 'straight',
 
   // Initial state - Assets
   assets: [
@@ -84,6 +95,15 @@ export const useGardenStore = create<GardenStore>((set) => ({
   ],
   selectedAssetId: null,
   isDraggingAsset: false,
+
+  // Tool actions
+  setMainTool: (tool) =>
+    set({
+      mainTool: tool,
+      selectedAssetId: null, // Deselect asset when changing tools
+    }),
+
+  setRakeTool: (tool) => set({ currentRakeTool: tool }),
 
   // Rake actions
   startRaking: (position) =>
@@ -135,14 +155,6 @@ export const useGardenStore = create<GardenStore>((set) => ({
       rakePaths: [],
       currentPath: [],
     }),
-
-  setTool: (tool) => set({ currentTool: tool }),
-
-  toggleRake: () =>
-    set((state) => ({
-      isRakeActive: !state.isRakeActive,
-      selectedAssetId: !state.isRakeActive ? null : state.selectedAssetId, // Deselect asset when activating rake
-    })),
 
   // Asset actions
   addAsset: (type, position) =>
