@@ -1,6 +1,9 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
 import Ground from './Ground'
+import Rake from './Rake'
+import RakeController from './RakeController'
+import RakePatterns from './RakePatterns'
 
 /**
  * ZenGarden - Main 3D scene component
@@ -56,6 +59,15 @@ export default function ZenGarden() {
 
       {/* Zen garden sand ground */}
       <Ground />
+
+      {/* Rake patterns on the sand */}
+      <RakePatterns />
+
+      {/* Interactive rake */}
+      <Rake />
+
+      {/* Rake interaction controller */}
+      <RakeController />
     </Canvas>
   )
 }
