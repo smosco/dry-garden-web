@@ -1,5 +1,5 @@
-import { useRef, ReactNode } from 'react'
-import { useThree } from '@react-three/fiber'
+import { useRef, ReactNode, useEffect } from 'react'
+import { ThreeEvent } from '@react-three/fiber'
 import { TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { useGardenStore, GardenAsset } from '../stores/useGardenStore'
@@ -15,12 +15,19 @@ interface DraggableAssetProps {
 
 export default function DraggableAsset({ asset, children }: DraggableAssetProps) {
   const groupRef = useRef<THREE.Group>(null)
+  const transformRef = useRef<any>(null)
   const { selectedAssetId, selectAsset, updateAsset } = useGardenStore()
-  const { camera, gl } = useThree()
 
   const isSelected = selectedAssetId === asset.id
 
-  const handleClick = (e: any) => {
+  // Set the transform controls object after mount
+  useEffect(() => {
+    if (isSelected && transformRef.current && groupRef.current) {
+      transformRef.current.attach(groupRef.current)
+    }
+  }, [isSelected])
+
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
     selectAsset(asset.id)
   }
@@ -52,13 +59,12 @@ export default function DraggableAsset({ asset, children }: DraggableAssetProps)
       </group>
 
       {/* Show TransformControls only when selected */}
-      {isSelected && (
+      {isSelected && groupRef.current && (
         <TransformControls
-          object={groupRef.current!}
-          mode="translate" // Can switch between 'translate', 'rotate', 'scale'
+          ref={transformRef}
+          object={groupRef.current}
+          mode="translate"
           onObjectChange={handleTransformChange}
-          camera={camera}
-          gl={gl}
         />
       )}
     </>
