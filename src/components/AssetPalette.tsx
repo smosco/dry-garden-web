@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useGardenStore, AssetType } from '../stores/useGardenStore'
+import { useGardenStore, type AssetType } from '../stores/useGardenStore'
 import './AssetPalette.css'
 
 /**

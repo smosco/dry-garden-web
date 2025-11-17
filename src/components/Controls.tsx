@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useGardenStore, ToolType } from '../stores/useGardenStore'
+import { useGardenStore, type ToolType } from '../stores/useGardenStore'
 import './Controls.css'
 
 /**

@@ -8,7 +8,7 @@ import { useGardenStore } from '../stores/useGardenStore'
  * Uses raycasting to translate 2D input to 3D garden space
  */
 export default function RakeController() {
-  const { camera, gl, scene } = useThree()
+  const { camera, gl } = useThree()
   const raycaster = useRef(new THREE.Raycaster())
   const mouse = useRef(new THREE.Vector2())
   const groundPlane = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0))

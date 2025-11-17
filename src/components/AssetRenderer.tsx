@@ -1,4 +1,4 @@
-import { GardenAsset } from '../stores/useGardenStore'
+import type { GardenAsset } from '../stores/useGardenStore'
 import StoneTower from './StoneTower'
 import DecorativeRocks from './DecorativeRocks'
 import Bamboo from './Bamboo'

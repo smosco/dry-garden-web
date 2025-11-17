@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import * as THREE from 'three'
 import { useGardenStore } from '../stores/useGardenStore'
 import { Line } from '@react-three/drei'
