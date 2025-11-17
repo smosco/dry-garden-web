@@ -1,5 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
+import { EffectComposer, Bloom, Vignette, ToneMapping } from '@react-three/postprocessing'
+import { BlendFunction } from 'postprocessing'
 import Ground from './Ground'
 import Rake from './Rake'
 import RakeController from './RakeController'
@@ -82,6 +84,27 @@ export default function ZenGarden() {
 
       <Bamboo position={[-7, 0, 6]} height={2.5} count={4} />
       <Bamboo position={[7, 0, -2]} height={2} count={3} />
+
+      {/* Post-processing effects for meditative atmosphere */}
+      <EffectComposer>
+        {/* Soft bloom for dreamy light */}
+        <Bloom
+          intensity={0.3}
+          luminanceThreshold={0.8}
+          luminanceSmoothing={0.9}
+          blendFunction={BlendFunction.ADD}
+        />
+
+        {/* Vignette for focus */}
+        <Vignette
+          offset={0.3}
+          darkness={0.5}
+          blendFunction={BlendFunction.NORMAL}
+        />
+
+        {/* Tone mapping (must be last) */}
+        <ToneMapping />
+      </EffectComposer>
     </Canvas>
   )
 }
