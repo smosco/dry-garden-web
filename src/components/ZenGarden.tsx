@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
+import Ground from './Ground'
 
 /**
  * ZenGarden - Main 3D scene component
@@ -53,17 +54,8 @@ export default function ZenGarden() {
         target={[0, 0, 0]}
       />
 
-      {/* Temporary ground plane for testing */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0, 0]}>
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#d4c5b0" />
-      </mesh>
-
-      {/* Temporary test sphere */}
-      <mesh position={[0, 1, 0]} castShadow>
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial color="#8a8a8a" roughness={0.3} metalness={0.1} />
-      </mesh>
+      {/* Zen garden sand ground */}
+      <Ground />
     </Canvas>
   )
 }
