@@ -72,6 +72,15 @@
   background: linear-gradient(135deg, #999 0%, #777 100%);
 }
 
+.control-button.active {
+  background: linear-gradient(135deg, #4a8b47 0%, #356b35 100%);
+  box-shadow: 0 4px 16px rgba(74, 139, 71, 0.4);
+}
+
+.control-button.active:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a9a57 0%, #457a45 100%);
+}
+
 .controls-subtitle {
   font-size: 13px;
   font-weight: 600;

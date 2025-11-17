@@ -36,6 +36,7 @@ export type ToolType = 'straight' | 'circular' | 'wave'
 interface GardenStore {
   // Rake state
   isRaking: boolean
+  isRakeActive: boolean
   rakePosition: THREE.Vector3
   rakePaths: RakePath[]
   currentPath: THREE.Vector3[]
@@ -44,6 +45,7 @@ interface GardenStore {
   // Asset state
   assets: GardenAsset[]
   selectedAssetId: string | null
+  isDraggingAsset: boolean
 
   // Rake actions
   startRaking: (position: THREE.Vector3) => void
@@ -51,6 +53,7 @@ interface GardenStore {
   stopRaking: () => void
   clearPaths: () => void
   setTool: (tool: ToolType) => void
+  toggleRake: () => void
 
   // Asset actions
   addAsset: (type: AssetType, position: [number, number, number]) => void
@@ -62,6 +65,7 @@ interface GardenStore {
 export const useGardenStore = create<GardenStore>((set) => ({
   // Initial state - Rake
   isRaking: false,
+  isRakeActive: false,
   rakePosition: new THREE.Vector3(0, 0, 0),
   rakePaths: [],
   currentPath: [],
@@ -79,6 +83,7 @@ export const useGardenStore = create<GardenStore>((set) => ({
     { id: 'bamboo-2', type: 'bamboo', position: [7, 0, -2], rotation: [0, 0, 0], scale: 1 },
   ],
   selectedAssetId: null,
+  isDraggingAsset: false,
 
   // Rake actions
   startRaking: (position) =>
@@ -132,6 +137,12 @@ export const useGardenStore = create<GardenStore>((set) => ({
     }),
 
   setTool: (tool) => set({ currentTool: tool }),
+
+  toggleRake: () =>
+    set((state) => ({
+      isRakeActive: !state.isRakeActive,
+      selectedAssetId: !state.isRakeActive ? null : state.selectedAssetId, // Deselect asset when activating rake
+    })),
 
   // Asset actions
   addAsset: (type, position) =>

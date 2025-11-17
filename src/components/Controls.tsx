@@ -15,6 +15,8 @@ export default function Controls() {
     selectedAssetId,
     deleteAsset,
     assets,
+    isRakeActive,
+    toggleRake,
   } = useGardenStore()
   const [isPlaying, setIsPlaying] = useState(false)
 
@@ -44,23 +46,36 @@ export default function Controls() {
     <div className="controls">
       <div className="controls-title">Zen Garden</div>
 
-      {/* Tool Selection */}
+      {/* Rake Toggle */}
       <div className="controls-section">
-        <div className="controls-subtitle">Rake Tool</div>
-        <div className="tool-buttons">
-          {tools.map((tool) => (
-            <button
-              key={tool.type}
-              onClick={() => setTool(tool.type)}
-              className={`tool-button ${currentTool === tool.type ? 'active' : ''}`}
-              title={tool.label}
-            >
-              <span className="tool-icon">{tool.icon}</span>
-              <span className="tool-label">{tool.label}</span>
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={toggleRake}
+          className={`control-button ${isRakeActive ? 'active' : ''}`}
+          title={isRakeActive ? 'Put rake away' : 'Pick up rake'}
+        >
+          {isRakeActive ? '🧹 Put Away Rake' : '🧹 Pick Up Rake'}
+        </button>
       </div>
+
+      {/* Tool Selection - Only show when rake is active */}
+      {isRakeActive && (
+        <div className="controls-section">
+          <div className="controls-subtitle">Rake Tool</div>
+          <div className="tool-buttons">
+            {tools.map((tool) => (
+              <button
+                key={tool.type}
+                onClick={() => setTool(tool.type)}
+                className={`tool-button ${currentTool === tool.type ? 'active' : ''}`}
+                title={tool.label}
+              >
+                <span className="tool-icon">{tool.icon}</span>
+                <span className="tool-label">{tool.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pattern Management */}
       <div className="controls-section">
@@ -107,7 +122,7 @@ export default function Controls() {
       </div>
 
       <div className="controls-hint">
-        Click assets to move • Drag to rake
+        {isRakeActive ? 'Drag to rake patterns' : 'Click assets to select and move'}
       </div>
     </div>
   )

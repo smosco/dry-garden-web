@@ -51,6 +51,11 @@ export default function RakeController() {
     const handlePointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return // Only left click
 
+      const state = useGardenStore.getState()
+
+      // Don't start raking if rake is not active or if an asset is being dragged
+      if (!state.isRakeActive || state.isDraggingAsset) return
+
       raycaster.current.setFromCamera(mouse.current, camera)
 
       if (raycaster.current.ray.intersectPlane(groundPlane.current, intersectionPoint.current)) {

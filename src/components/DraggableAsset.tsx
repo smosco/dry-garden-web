@@ -33,8 +33,42 @@ export default function DraggableAsset({
     }
   }, [isSelected]);
 
+  // Notify store when dragging starts/stops to disable raking
+  useEffect(() => {
+    if (!transformRef.current) return;
+
+    const controls = transformRef.current;
+
+    const handleDragStart = () => {
+      useGardenStore.setState({ isDraggingAsset: true });
+    };
+
+    const handleDragEnd = () => {
+      useGardenStore.setState({ isDraggingAsset: false });
+    };
+
+    const handleDraggingChanged = (event: { value: boolean }) => {
+      if (event.value) {
+        handleDragStart();
+      } else {
+        handleDragEnd();
+      }
+    };
+
+    controls.addEventListener('dragging-changed', handleDraggingChanged);
+
+    return () => {
+      controls.removeEventListener('dragging-changed', handleDraggingChanged);
+    };
+  }, [targetObject]);
+
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+
+    // Don't select asset if rake is active
+    const isRakeActive = useGardenStore.getState().isRakeActive;
+    if (isRakeActive) return;
+
     selectAsset(asset.id);
   };
 
