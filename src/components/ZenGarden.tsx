@@ -6,15 +6,21 @@ import Ground from './Ground'
 import Rake from './Rake'
 import RakeController from './RakeController'
 import RakePatterns from './RakePatterns'
-import StoneTower from './StoneTower'
-import DecorativeRocks from './DecorativeRocks'
-import Bamboo from './Bamboo'
+import DraggableAsset from './DraggableAsset'
+import AssetRenderer from './AssetRenderer'
+import { useGardenStore } from '../stores/useGardenStore'
 
 /**
  * ZenGarden - Main 3D scene component
  * Provides the canvas, camera, lighting, and controls for the zen garden experience
  */
 export default function ZenGarden() {
+  const { assets, selectAsset } = useGardenStore()
+
+  // Deselect asset when clicking on ground
+  const handleGroundClick = () => {
+    selectAsset(null)
+  }
   return (
     <Canvas
       camera={{
@@ -74,16 +80,23 @@ export default function ZenGarden() {
       {/* Rake interaction controller */}
       <RakeController />
 
-      {/* Decorative elements */}
-      <StoneTower position={[-5, 0, -3]} scale={1.2} />
-      <StoneTower position={[6, 0, 4]} scale={0.8} />
+      {/* Dynamic garden assets - draggable and transformable */}
+      {assets.map((asset) => (
+        <DraggableAsset key={asset.id} asset={asset}>
+          <AssetRenderer asset={asset} />
+        </DraggableAsset>
+      ))}
 
-      <DecorativeRocks position={[-3, 0, 5]} count={4} />
-      <DecorativeRocks position={[4, 0, -5]} count={3} />
-      <DecorativeRocks position={[0, 0, -7]} count={5} />
-
-      <Bamboo position={[-7, 0, 6]} height={2.5} count={4} />
-      <Bamboo position={[7, 0, -2]} height={2} count={3} />
+      {/* Clickable ground to deselect */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+        onClick={handleGroundClick}
+        visible={false}
+      >
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
 
       {/* Post-processing effects for meditative atmosphere */}
       <EffectComposer>

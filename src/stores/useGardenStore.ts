@@ -10,6 +10,27 @@ export interface RakePath {
 }
 
 /**
+ * AssetType - Types of placeable assets
+ */
+export type AssetType = 'stone-tower' | 'rocks' | 'bamboo' | 'stone-lantern' | 'pond' | 'bridge'
+
+/**
+ * GardenAsset - Represents a placeable object in the garden
+ */
+export interface GardenAsset {
+  id: string
+  type: AssetType
+  position: [number, number, number]
+  rotation: [number, number, number]
+  scale: number
+}
+
+/**
+ * ToolType - Types of rake tools
+ */
+export type ToolType = 'straight' | 'circular' | 'wave'
+
+/**
  * GardenStore - Global state for zen garden
  */
 interface GardenStore {
@@ -18,30 +39,56 @@ interface GardenStore {
   rakePosition: THREE.Vector3
   rakePaths: RakePath[]
   currentPath: THREE.Vector3[]
+  currentTool: ToolType
 
-  // Actions
+  // Asset state
+  assets: GardenAsset[]
+  selectedAssetId: string | null
+
+  // Rake actions
   startRaking: (position: THREE.Vector3) => void
   updateRaking: (position: THREE.Vector3) => void
   stopRaking: () => void
   clearPaths: () => void
+  setTool: (tool: ToolType) => void
+
+  // Asset actions
+  addAsset: (type: AssetType, position: [number, number, number]) => void
+  updateAsset: (id: string, updates: Partial<Omit<GardenAsset, 'id' | 'type'>>) => void
+  deleteAsset: (id: string) => void
+  selectAsset: (id: string | null) => void
 }
 
 export const useGardenStore = create<GardenStore>((set) => ({
-  // Initial state
+  // Initial state - Rake
   isRaking: false,
   rakePosition: new THREE.Vector3(0, 0, 0),
   rakePaths: [],
   currentPath: [],
+  currentTool: 'straight',
 
-  // Start raking - begin a new stroke
+  // Initial state - Assets
+  assets: [
+    // Default initial assets (converted from hardcoded ones)
+    { id: 'tower-1', type: 'stone-tower', position: [-5, 0, -3], rotation: [0, 0, 0], scale: 1.2 },
+    { id: 'tower-2', type: 'stone-tower', position: [6, 0, 4], rotation: [0, 0, 0], scale: 0.8 },
+    { id: 'rocks-1', type: 'rocks', position: [-3, 0, 5], rotation: [0, 0, 0], scale: 1 },
+    { id: 'rocks-2', type: 'rocks', position: [4, 0, -5], rotation: [0, 0, 0], scale: 1 },
+    { id: 'rocks-3', type: 'rocks', position: [0, 0, -7], rotation: [0, 0, 0], scale: 1 },
+    { id: 'bamboo-1', type: 'bamboo', position: [-7, 0, 6], rotation: [0, 0, 0], scale: 1 },
+    { id: 'bamboo-2', type: 'bamboo', position: [7, 0, -2], rotation: [0, 0, 0], scale: 1 },
+  ],
+  selectedAssetId: null,
+
+  // Rake actions
   startRaking: (position) =>
     set({
       isRaking: true,
       rakePosition: position.clone(),
       currentPath: [position.clone()],
+      selectedAssetId: null, // Deselect asset when raking
     }),
 
-  // Update raking - add point to current stroke
   updateRaking: (position) =>
     set((state) => {
       if (!state.isRaking) return state
@@ -49,7 +96,6 @@ export const useGardenStore = create<GardenStore>((set) => ({
       const newPosition = position.clone()
       const lastPoint = state.currentPath[state.currentPath.length - 1]
 
-      // Only add point if it's far enough from the last one (smooth the path)
       if (!lastPoint || lastPoint.distanceTo(newPosition) > 0.1) {
         return {
           rakePosition: newPosition,
@@ -60,7 +106,6 @@ export const useGardenStore = create<GardenStore>((set) => ({
       return { rakePosition: newPosition }
     }),
 
-  // Stop raking - save the current stroke
   stopRaking: () =>
     set((state) => {
       if (!state.isRaking || state.currentPath.length < 2) {
@@ -80,10 +125,41 @@ export const useGardenStore = create<GardenStore>((set) => ({
       }
     }),
 
-  // Clear all rake paths
   clearPaths: () =>
     set({
       rakePaths: [],
       currentPath: [],
     }),
+
+  setTool: (tool) => set({ currentTool: tool }),
+
+  // Asset actions
+  addAsset: (type, position) =>
+    set((state) => ({
+      assets: [
+        ...state.assets,
+        {
+          id: `${type}-${Date.now()}`,
+          type,
+          position,
+          rotation: [0, 0, 0],
+          scale: 1,
+        },
+      ],
+    })),
+
+  updateAsset: (id, updates) =>
+    set((state) => ({
+      assets: state.assets.map((asset) =>
+        asset.id === id ? { ...asset, ...updates } : asset
+      ),
+    })),
+
+  deleteAsset: (id) =>
+    set((state) => ({
+      assets: state.assets.filter((asset) => asset.id !== id),
+      selectedAssetId: state.selectedAssetId === id ? null : state.selectedAssetId,
+    })),
+
+  selectAsset: (id) => set({ selectedAssetId: id }),
 }))

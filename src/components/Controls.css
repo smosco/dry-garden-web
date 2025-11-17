@@ -72,6 +72,81 @@
   background: linear-gradient(135deg, #999 0%, #777 100%);
 }
 
+.controls-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b5d4f;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tool-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tool-button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  background: white;
+  border: 2px solid rgba(139, 111, 71, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  border-color: #8b6f47;
+  background: rgba(139, 111, 71, 0.05);
+  transform: translateY(-2px);
+}
+
+.tool-button.active {
+  background: linear-gradient(135deg, #8b6f47 0%, #6b5435 100%);
+  border-color: #8b6f47;
+  box-shadow: 0 4px 12px rgba(139, 111, 71, 0.3);
+}
+
+.tool-button.active .tool-icon,
+.tool-button.active .tool-label {
+  color: white;
+}
+
+.tool-icon {
+  font-size: 18px;
+  line-height: 1;
+  color: #8b6f47;
+}
+
+.tool-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b5d4f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.asset-section {
+  background: rgba(139, 111, 71, 0.05);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 111, 71, 0.2);
+}
+
+.delete-button {
+  background: linear-gradient(135deg, #c74a4a 0%, #a63838 100%);
+}
+
+.delete-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d65a5a 0%, #b64848 100%);
+}
+
 .controls-hint {
   font-size: 12px;
   color: #8a7a6d;
