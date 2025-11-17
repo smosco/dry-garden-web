@@ -4,6 +4,9 @@ import Ground from './Ground'
 import Rake from './Rake'
 import RakeController from './RakeController'
 import RakePatterns from './RakePatterns'
+import StoneTower from './StoneTower'
+import DecorativeRocks from './DecorativeRocks'
+import Bamboo from './Bamboo'
 
 /**
  * ZenGarden - Main 3D scene component
@@ -68,6 +71,17 @@ export default function ZenGarden() {
 
       {/* Rake interaction controller */}
       <RakeController />
+
+      {/* Decorative elements */}
+      <StoneTower position={[-5, 0, -3]} scale={1.2} />
+      <StoneTower position={[6, 0, 4]} scale={0.8} />
+
+      <DecorativeRocks position={[-3, 0, 5]} count={4} />
+      <DecorativeRocks position={[4, 0, -5]} count={3} />
+      <DecorativeRocks position={[0, 0, -7]} count={5} />
+
+      <Bamboo position={[-7, 0, 6]} height={2.5} count={4} />
+      <Bamboo position={[7, 0, -2]} height={2} count={3} />
     </Canvas>
   )
 }
