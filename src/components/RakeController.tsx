@@ -1,90 +1,199 @@
-import { useRef, useEffect } from 'react'
-import { useThree } from '@react-three/fiber'
-import * as THREE from 'three'
-import { useGardenStore } from '../stores/useGardenStore'
+import { useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useGardenStore } from '../stores/useGardenStore';
+import { GARDEN_SIZE } from '../systems/PatternSystem';
+import {
+  initAudio,
+  playRakingSound,
+  stopRakingSound,
+} from '../systems/AudioSystem';
 
 /**
- * RakeController - Handles mouse/touch interaction for raking
- * Uses raycasting to translate 2D input to 3D garden space
+ * RakeController - 갈퀴 인터랙션 처리
+ *
+ * 기능:
+ * - 마우스/터치로 모래에 패턴 그리기
+ * - 돌을 피해서 그리기 (충돌 감지)
+ * - 모래 긁는 소리 재생
  */
 export default function RakeController() {
-  const { camera, gl } = useThree()
-  const raycaster = useRef(new THREE.Raycaster())
-  const mouse = useRef(new THREE.Vector2())
-  const groundPlane = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0))
-  const intersectionPoint = useRef(new THREE.Vector3())
+  const { camera, gl } = useThree();
+  const raycasterRef = useRef(new THREE.Raycaster());
+  const groundPlaneRef = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
+  const intersectionRef = useRef(new THREE.Vector3());
+  const audioInitialized = useRef(false);
 
-  const { startRaking, updateRaking, stopRaking } = useGardenStore()
+  const { activeTool, stones, startStroke, continueStroke, endStroke } =
+    useGardenStore();
+
+  // 포인터 위치를 월드 좌표로 변환
+  const getWorldPosition = (
+    clientX: number,
+    clientY: number
+  ): THREE.Vector3 | null => {
+    const rect = gl.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    raycasterRef.current.setFromCamera(mouse, camera);
+
+    if (
+      raycasterRef.current.ray.intersectPlane(
+        groundPlaneRef.current,
+        intersectionRef.current
+      )
+    ) {
+      return intersectionRef.current.clone();
+    }
+    return null;
+  };
+
+  // 해당 위치가 돌과 충돌하는지 확인
+  const isCollidingWithStone = (x: number, z: number): boolean => {
+    for (const stone of stones) {
+      const dx = x - stone.position[0];
+      const dz = z - stone.position[1];
+      const distance = Math.sqrt(dx * dx + dz * dz);
+      if (distance < stone.radius + 0.1) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // 커서 스타일 설정 함수
+  const setCursor = (cursor: string) => {
+    document.body.style.cursor = cursor;
+  };
 
   useEffect(() => {
-    const canvas = gl.domElement
+    const canvas = gl.domElement;
 
-    // Handle mouse/touch move
-    const handlePointerMove = (event: PointerEvent) => {
-      // Calculate mouse position in normalized device coordinates (-1 to +1)
-      const rect = canvas.getBoundingClientRect()
-      mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-      mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-
-      // Update raycaster
-      raycaster.current.setFromCamera(mouse.current, camera)
-
-      // Find intersection with ground plane
-      if (raycaster.current.ray.intersectPlane(groundPlane.current, intersectionPoint.current)) {
-        // Clamp to garden bounds
-        const x = THREE.MathUtils.clamp(intersectionPoint.current.x, -9, 9)
-        const z = THREE.MathUtils.clamp(intersectionPoint.current.z, -9, 9)
-        const position = new THREE.Vector3(x, 0.2, z)
-
-        // Update rake position if raking
-        const isRaking = useGardenStore.getState().isRaking
-        if (isRaking) {
-          updateRaking(position)
-        } else {
-          // Update position even when not raking (for rake following cursor)
-          useGardenStore.setState({ rakePosition: position })
-        }
+    const handlePointerDown = (e: PointerEvent) => {
+      // 첫 인터랙션 시 오디오 초기화
+      if (!audioInitialized.current) {
+        initAudio();
+        audioInitialized.current = true;
       }
-    }
 
-    // Handle pointer down (start raking)
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return // Only left click
+      if (e.button !== 0 || activeTool !== 'rake') return;
 
-      const state = useGardenStore.getState()
+      const pos = getWorldPosition(e.clientX, e.clientY);
+      if (!pos) return;
 
-      // Don't start raking if rake tool is not selected or if an asset is being dragged
-      if (state.mainTool !== 'rake' || state.isDraggingAsset) return
+      // 정원 범위 체크
+      const halfSize = GARDEN_SIZE / 2;
+      if (Math.abs(pos.x) > halfSize || Math.abs(pos.z) > halfSize) return;
 
-      raycaster.current.setFromCamera(mouse.current, camera)
+      // 돌 충돌 체크
+      if (isCollidingWithStone(pos.x, pos.z)) return;
 
-      if (raycaster.current.ray.intersectPlane(groundPlane.current, intersectionPoint.current)) {
-        const x = THREE.MathUtils.clamp(intersectionPoint.current.x, -9, 9)
-        const z = THREE.MathUtils.clamp(intersectionPoint.current.z, -9, 9)
-        const position = new THREE.Vector3(x, 0.2, z)
-        startRaking(position)
+      startStroke(pos.x, pos.z);
+      playRakingSound();
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const state = useGardenStore.getState();
+      if (!state.isRaking || activeTool !== 'rake') return;
+
+      const pos = getWorldPosition(e.clientX, e.clientY);
+      if (!pos) return;
+
+      // 정원 범위 체크
+      const halfSize = GARDEN_SIZE / 2;
+      const x = THREE.MathUtils.clamp(pos.x, -halfSize, halfSize);
+      const z = THREE.MathUtils.clamp(pos.z, -halfSize, halfSize);
+
+      // 돌 충돌 시 획 종료
+      if (isCollidingWithStone(x, z)) {
+        endStroke();
+        stopRakingSound();
+        return;
       }
-    }
 
-    // Handle pointer up (stop raking)
+      continueStroke(x, z);
+    };
+
     const handlePointerUp = () => {
-      stopRaking()
-    }
+      endStroke();
+      stopRakingSound();
+    };
 
-    // Add event listeners
-    canvas.addEventListener('pointermove', handlePointerMove)
-    canvas.addEventListener('pointerdown', handlePointerDown)
-    canvas.addEventListener('pointerup', handlePointerUp)
-    canvas.addEventListener('pointerleave', handlePointerUp)
+    // 터치 이벤트도 처리
+    const handleTouchStart = (e: TouchEvent) => {
+      // 첫 인터랙션 시 오디오 초기화
+      if (!audioInitialized.current) {
+        initAudio();
+        audioInitialized.current = true;
+      }
 
-    // Cleanup
+      if (activeTool !== 'rake') return;
+      const touch = e.touches[0];
+      const pos = getWorldPosition(touch.clientX, touch.clientY);
+      if (!pos) return;
+
+      const halfSize = GARDEN_SIZE / 2;
+      if (Math.abs(pos.x) > halfSize || Math.abs(pos.z) > halfSize) return;
+      if (isCollidingWithStone(pos.x, pos.z)) return;
+
+      startStroke(pos.x, pos.z);
+      playRakingSound();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const state = useGardenStore.getState();
+      if (!state.isRaking || activeTool !== 'rake') return;
+
+      const touch = e.touches[0];
+      const pos = getWorldPosition(touch.clientX, touch.clientY);
+      if (!pos) return;
+
+      const halfSize = GARDEN_SIZE / 2;
+      const x = THREE.MathUtils.clamp(pos.x, -halfSize, halfSize);
+      const z = THREE.MathUtils.clamp(pos.z, -halfSize, halfSize);
+
+      if (isCollidingWithStone(x, z)) {
+        endStroke();
+        stopRakingSound();
+        return;
+      }
+
+      continueStroke(x, z);
+    };
+
+    const handleTouchEnd = () => {
+      endStroke();
+      stopRakingSound();
+    };
+
+    canvas.addEventListener('pointerdown', handlePointerDown);
+    canvas.addEventListener('pointermove', handlePointerMove);
+    canvas.addEventListener('pointerup', handlePointerUp);
+    canvas.addEventListener('pointerleave', handlePointerUp);
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
+    canvas.addEventListener('touchend', handleTouchEnd);
+
     return () => {
-      canvas.removeEventListener('pointermove', handlePointerMove)
-      canvas.removeEventListener('pointerdown', handlePointerDown)
-      canvas.removeEventListener('pointerup', handlePointerUp)
-      canvas.removeEventListener('pointerleave', handlePointerUp)
-    }
-  }, [camera, gl, startRaking, updateRaking, stopRaking])
+      canvas.removeEventListener('pointerdown', handlePointerDown);
+      canvas.removeEventListener('pointermove', handlePointerMove);
+      canvas.removeEventListener('pointerup', handlePointerUp);
+      canvas.removeEventListener('pointerleave', handlePointerUp);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [camera, gl, activeTool, stones, startStroke, continueStroke, endStroke]);
 
-  return null // This component doesn't render anything
+  // 커서 스타일 변경 (activeTool 변경 시)
+  useEffect(() => {
+    setCursor(activeTool === 'rake' ? 'crosshair' : 'default');
+    return () => setCursor('default');
+  }, [activeTool]);
+
+  return null;
 }

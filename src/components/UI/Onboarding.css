@@ -1,0 +1,109 @@
+/* Onboarding - 시작 화면 */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.onboarding-content {
+  text-align: center;
+  color: white;
+  max-width: 320px;
+  padding: 40px 24px;
+}
+
+.onboarding-step-indicator {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.step-dot.active {
+  background: #d4c5b0;
+  transform: scale(1.2);
+}
+
+.onboarding-title {
+  font-size: 36px;
+  font-weight: 200;
+  margin: 0 0 8px 0;
+  letter-spacing: 8px;
+}
+
+.onboarding-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+.onboarding-text {
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 32px 0;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-line;
+  font-weight: 300;
+}
+
+.onboarding-btn {
+  background: rgba(212, 197, 176, 0.2);
+  border: 1px solid rgba(212, 197, 176, 0.4);
+  color: #d4c5b0;
+  padding: 12px 48px;
+  font-size: 14px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 2px;
+}
+
+.onboarding-btn:hover {
+  background: rgba(212, 197, 176, 0.3);
+  transform: translateY(-2px);
+}
+
+.onboarding-skip {
+  display: block;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  margin-top: 24px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.onboarding-skip:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onboarding-content {
+  animation: fadeIn 0.6s ease-out;
+}

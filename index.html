@@ -1,13 +1,120 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dry-garden-web</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪨</text></svg>"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta
+      name="description"
+      content="무상(無常) - 디지털 젠 가든 명상 앱. 만들고 지우며 깨닫는 선(禪)의 여정"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>무상 (無常) - Karesansui</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* 초기 로딩 화면 */
+      body {
+        margin: 0;
+        background: #1a1a1a;
+        font-family: 'Noto Sans KR', sans-serif;
+      }
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #1a1a1a;
+        color: #666;
+        z-index: 9999;
+      }
+      #loading.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+      }
+      #loading .title {
+        font-size: 28px;
+        font-weight: 300;
+        letter-spacing: 8px;
+        margin-bottom: 8px;
+        color: #888;
+      }
+      #loading .subtitle {
+        font-size: 12px;
+        letter-spacing: 4px;
+        color: #555;
+      }
+      #loading .dots {
+        margin-top: 32px;
+        display: flex;
+        gap: 8px;
+      }
+      #loading .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #444;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      #loading .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      #loading .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="loading">
+      <div class="title">無常</div>
+      <div class="subtitle">KARESANSUI</div>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // 로딩 화면 숨기기
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          document.getElementById('loading').classList.add('hidden');
+        }, 500);
+      });
+    </script>
   </body>
 </html>

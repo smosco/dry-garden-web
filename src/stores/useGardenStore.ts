@@ -2,187 +2,204 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 
 /**
- * RakePath - Represents a stroke made by the rake
+ * Stone - 정원의 돌
  */
-export interface RakePath {
-  points: THREE.Vector3[]
-  timestamp: number
-}
-
-/**
- * AssetType - Types of placeable assets
- */
-export type AssetType = 'stone-tower' | 'rocks' | 'bamboo' | 'stone-lantern' | 'pond' | 'bridge'
-
-/**
- * GardenAsset - Represents a placeable object in the garden
- */
-export interface GardenAsset {
+export interface Stone {
   id: string
-  type: AssetType
-  position: [number, number, number]
-  rotation: [number, number, number]
+  position: [number, number]  // x, z 좌표
+  radius: number              // 돌의 반지름 (패턴 생성용)
   scale: number
 }
 
 /**
- * ToolType - Types of rake tools
+ * RakeStroke - 갈퀴로 그은 한 획
  */
-export type ToolType = 'straight' | 'circular' | 'wave'
-
-/**
- * MainToolType - Main tool selection (hand for navigation, rake for patterns, move for asset placement)
- */
-export type MainToolType = 'hand' | 'move' | 'rake'
-
-/**
- * GardenStore - Global state for zen garden
- */
-interface GardenStore {
-  // Tool state
-  mainTool: MainToolType
-  currentRakeTool: ToolType
-
-  // Rake state
-  isRaking: boolean
-  rakePosition: THREE.Vector3
-  rakePaths: RakePath[]
-  currentPath: THREE.Vector3[]
-
-  // Asset state
-  assets: GardenAsset[]
-  selectedAssetId: string | null
-  isDraggingAsset: boolean
-
-  // Tool actions
-  setMainTool: (tool: MainToolType) => void
-  setRakeTool: (tool: ToolType) => void
-
-  // Rake actions
-  startRaking: (position: THREE.Vector3) => void
-  updateRaking: (position: THREE.Vector3) => void
-  stopRaking: () => void
-  clearPaths: () => void
-
-  // Asset actions
-  addAsset: (type: AssetType, position: [number, number, number]) => void
-  updateAsset: (id: string, updates: Partial<Omit<GardenAsset, 'id' | 'type'>>) => void
-  deleteAsset: (id: string) => void
-  selectAsset: (id: string | null) => void
+export interface RakeStroke {
+  id: string
+  points: THREE.Vector2[]     // 2D 포인트 배열 (x, z)
+  timestamp: number
+  opacity: number             // 페이드아웃용
 }
 
-export const useGardenStore = create<GardenStore>((set) => ({
-  // Initial state - Tools
-  mainTool: 'hand',
-  currentRakeTool: 'straight',
+/**
+ * PhilosophyStage - 깨달음의 단계
+ */
+export type PhilosophyStage = 'kanso' | 'fukinsei'
 
-  // Initial state - Rake
+interface GardenStore {
+  // 정원 상태
+  stones: Stone[]
+  strokes: RakeStroke[]
+
+  // 도구 상태
+  activeTool: 'view' | 'rake' | 'stone'
+  isRaking: boolean
+  currentStrokePoints: THREE.Vector2[]
+
+  // 철학 상태
+  stage: PhilosophyStage
+  showQuote: boolean
+  currentQuote: string
+
+  // 액션
+  setActiveTool: (tool: 'view' | 'rake' | 'stone') => void
+
+  // 돌 관련
+  addStone: (x: number, z: number) => void
+  moveStone: (id: string, x: number, z: number) => void
+  removeStone: (id: string) => void
+
+  // 갈퀴질 관련
+  startStroke: (x: number, z: number) => void
+  continueStroke: (x: number, z: number) => void
+  endStroke: () => void
+  updateStrokeOpacity: (id: string, opacity: number) => void
+  removeStroke: (id: string) => void
+  clearAllStrokes: () => void
+
+  // 철학 관련
+  showPhilosophyQuote: (quote: string) => void
+  hideQuote: () => void
+  advanceStage: () => void
+
+  // 리셋
+  resetGarden: () => void
+}
+
+// 초기 돌 배치 (비대칭, 홀수)
+const initialStones: Stone[] = [
+  { id: 'stone-1', position: [-2.5, -1], radius: 0.6, scale: 1.2 },
+  { id: 'stone-2', position: [3, 2], radius: 0.5, scale: 1.0 },
+  { id: 'stone-3', position: [0.5, -3], radius: 0.4, scale: 0.8 },
+]
+
+export const useGardenStore = create<GardenStore>((set, get) => ({
+  // 초기 상태
+  stones: initialStones,
+  strokes: [],
+  activeTool: 'rake',
   isRaking: false,
-  rakePosition: new THREE.Vector3(0, 0, 0),
-  rakePaths: [],
-  currentPath: [],
+  currentStrokePoints: [],
+  stage: 'kanso',
+  showQuote: false,
+  currentQuote: '',
 
-  // Initial state - Assets
-  assets: [
-    // Default initial assets (converted from hardcoded ones)
-    { id: 'tower-1', type: 'stone-tower', position: [-5, 0, -3], rotation: [0, 0, 0], scale: 1.2 },
-    { id: 'tower-2', type: 'stone-tower', position: [6, 0, 4], rotation: [0, 0, 0], scale: 0.8 },
-    { id: 'rocks-1', type: 'rocks', position: [-3, 0, 5], rotation: [0, 0, 0], scale: 1 },
-    { id: 'rocks-2', type: 'rocks', position: [4, 0, -5], rotation: [0, 0, 0], scale: 1 },
-    { id: 'rocks-3', type: 'rocks', position: [0, 0, -7], rotation: [0, 0, 0], scale: 1 },
-    { id: 'bamboo-1', type: 'bamboo', position: [-7, 0, 6], rotation: [0, 0, 0], scale: 1 },
-    { id: 'bamboo-2', type: 'bamboo', position: [7, 0, -2], rotation: [0, 0, 0], scale: 1 },
-  ],
-  selectedAssetId: null,
-  isDraggingAsset: false,
+  // 도구 선택
+  setActiveTool: (tool) => set({ activeTool: tool }),
 
-  // Tool actions
-  setMainTool: (tool) =>
+  // 돌 추가
+  addStone: (x, z) => {
+    const stones = get().stones
+    if (stones.length >= 5) return // MVP: 최대 5개
+
     set({
-      mainTool: tool,
-      selectedAssetId: null, // Deselect asset when changing tools
-    }),
-
-  setRakeTool: (tool) => set({ currentRakeTool: tool }),
-
-  // Rake actions
-  startRaking: (position) =>
-    set({
-      isRaking: true,
-      rakePosition: position.clone(),
-      currentPath: [position.clone()],
-      selectedAssetId: null, // Deselect asset when raking
-    }),
-
-  updateRaking: (position) =>
-    set((state) => {
-      if (!state.isRaking) return state
-
-      const newPosition = position.clone()
-      const lastPoint = state.currentPath[state.currentPath.length - 1]
-
-      if (!lastPoint || lastPoint.distanceTo(newPosition) > 0.1) {
-        return {
-          rakePosition: newPosition,
-          currentPath: [...state.currentPath, newPosition],
-        }
-      }
-
-      return { rakePosition: newPosition }
-    }),
-
-  stopRaking: () =>
-    set((state) => {
-      if (!state.isRaking || state.currentPath.length < 2) {
-        return { isRaking: false, currentPath: [] }
-      }
-
-      return {
-        isRaking: false,
-        rakePaths: [
-          ...state.rakePaths,
-          {
-            points: state.currentPath,
-            timestamp: Date.now(),
-          },
-        ],
-        currentPath: [],
-      }
-    }),
-
-  clearPaths: () =>
-    set({
-      rakePaths: [],
-      currentPath: [],
-    }),
-
-  // Asset actions
-  addAsset: (type, position) =>
-    set((state) => ({
-      assets: [
-        ...state.assets,
+      stones: [
+        ...stones,
         {
-          id: `${type}-${Date.now()}`,
-          type,
-          position,
-          rotation: [0, 0, 0],
-          scale: 1,
+          id: `stone-${Date.now()}`,
+          position: [x, z],
+          radius: 0.4 + Math.random() * 0.3,
+          scale: 0.7 + Math.random() * 0.5,
         },
       ],
-    })),
+    })
+  },
 
-  updateAsset: (id, updates) =>
-    set((state) => ({
-      assets: state.assets.map((asset) =>
-        asset.id === id ? { ...asset, ...updates } : asset
+  // 돌 이동
+  moveStone: (id, x, z) => {
+    set({
+      stones: get().stones.map((s) =>
+        s.id === id ? { ...s, position: [x, z] as [number, number] } : s
       ),
-    })),
+    })
+  },
 
-  deleteAsset: (id) =>
-    set((state) => ({
-      assets: state.assets.filter((asset) => asset.id !== id),
-      selectedAssetId: state.selectedAssetId === id ? null : state.selectedAssetId,
-    })),
+  // 돌 제거
+  removeStone: (id) => {
+    set({ stones: get().stones.filter((s) => s.id !== id) })
+  },
 
-  selectAsset: (id) => set({ selectedAssetId: id }),
+  // 갈퀴질 시작
+  startStroke: (x, z) => {
+    set({
+      isRaking: true,
+      currentStrokePoints: [new THREE.Vector2(x, z)],
+    })
+  },
+
+  // 갈퀴질 계속
+  continueStroke: (x, z) => {
+    const { isRaking, currentStrokePoints } = get()
+    if (!isRaking) return
+
+    const lastPoint = currentStrokePoints[currentStrokePoints.length - 1]
+    const newPoint = new THREE.Vector2(x, z)
+
+    // 최소 거리 체크 (성능 최적화)
+    if (lastPoint && lastPoint.distanceTo(newPoint) < 0.05) return
+
+    set({
+      currentStrokePoints: [...currentStrokePoints, newPoint],
+    })
+  },
+
+  // 갈퀴질 종료
+  endStroke: () => {
+    const { currentStrokePoints, strokes } = get()
+
+    if (currentStrokePoints.length < 2) {
+      set({ isRaking: false, currentStrokePoints: [] })
+      return
+    }
+
+    const newStroke: RakeStroke = {
+      id: `stroke-${Date.now()}`,
+      points: currentStrokePoints,
+      timestamp: Date.now(),
+      opacity: 1.0,
+    }
+
+    set({
+      isRaking: false,
+      currentStrokePoints: [],
+      strokes: [...strokes, newStroke],
+    })
+  },
+
+  // 획 투명도 업데이트
+  updateStrokeOpacity: (id, opacity) => {
+    set({
+      strokes: get().strokes.map((s) =>
+        s.id === id ? { ...s, opacity } : s
+      ),
+    })
+  },
+
+  // 획 제거
+  removeStroke: (id) => {
+    set({ strokes: get().strokes.filter((s) => s.id !== id) })
+  },
+
+  // 모든 획 지우기
+  clearAllStrokes: () => set({ strokes: [] }),
+
+  // 철학 명언 표시
+  showPhilosophyQuote: (quote) => set({ showQuote: true, currentQuote: quote }),
+  hideQuote: () => set({ showQuote: false }),
+
+  // 단계 진행
+  advanceStage: () => {
+    const { stage } = get()
+    if (stage === 'kanso') {
+      set({ stage: 'fukinsei' })
+    }
+  },
+
+  // 정원 리셋
+  resetGarden: () => set({
+    stones: initialStones,
+    strokes: [],
+    currentStrokePoints: [],
+    isRaking: false,
+  }),
 }))
