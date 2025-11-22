@@ -22,49 +22,47 @@ export default function SandGround() {
   const baseTextureDataRef = useRef<ImageData | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
-  const stones = useGardenStore((state) => state.stones)
-  const strokes = useGardenStore((state) => state.strokes)
-  const currentStrokePoints = useGardenStore((state) => state.currentStrokePoints)
-  const updateStrokeOpacity = useGardenStore((state) => state.updateStrokeOpacity)
-  const removeStroke = useGardenStore((state) => state.removeStroke)
-
   // 캔버스와 텍스처 생성 (한 번만)
   const { canvas, texture } = useMemo(() => {
     const c = document.createElement('canvas')
     c.width = TEXTURE_SIZE
     c.height = TEXTURE_SIZE
-    canvasRef.current = c
 
     const tex = new THREE.CanvasTexture(c)
     tex.wrapS = THREE.ClampToEdgeWrapping
     tex.wrapT = THREE.ClampToEdgeWrapping
     tex.minFilter = THREE.LinearFilter
     tex.magFilter = THREE.LinearFilter
-    textureRef.current = tex
 
     return { canvas: c, texture: tex }
   }, [])
 
-  // 노멀맵 생성 (한 번만, useEffect에서)
+  // 노멀맵 생성 (한 번만)
   const normalMap = useMemo(() => {
     const tex = new THREE.CanvasTexture(document.createElement('canvas'))
-    normalMapRef.current = tex
     return tex
   }, [])
+
+  // ref 초기화 (useEffect에서)
+  useEffect(() => {
+    canvasRef.current = canvas
+    textureRef.current = texture
+    normalMapRef.current = normalMap
+  }, [canvas, texture, normalMap])
 
   // 초기화: 기본 텍스처 + 노멀맵 생성
   useEffect(() => {
     // 메인 텍스처 초기화
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      // 기본 모래색 (시라카와 자갈)
-      ctx.fillStyle = '#e8e0d0'
+      // 가레산스이 모래색 - 밝은 회백색 (시라카와 자갈 느낌)
+      ctx.fillStyle = '#d4d0c8'
       ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
 
       const imageData = ctx.getImageData(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
       const data = imageData.data
       for (let i = 0; i < data.length; i += 4) {
-        const noise = Math.random() * 15 - 7
+        const noise = Math.random() * 12 - 6
         data[i] = Math.min(255, Math.max(0, data[i] + noise))
         data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise))
         data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise))
@@ -78,7 +76,7 @@ export default function SandGround() {
     normalCanvas.width = 256
     normalCanvas.height = 256
     const nctx = normalCanvas.getContext('2d')
-    if (nctx) {
+    if (nctx && normalMapRef.current) {
       nctx.fillStyle = '#8080ff'
       nctx.fillRect(0, 0, 256, 256)
       const imageData = nctx.getImageData(0, 0, 256, 256)
@@ -91,13 +89,11 @@ export default function SandGround() {
       }
       nctx.putImageData(imageData, 0, 0)
 
-      if (normalMapRef.current) {
-        normalMapRef.current.image = normalCanvas
-        normalMapRef.current.wrapS = THREE.RepeatWrapping
-        normalMapRef.current.wrapT = THREE.RepeatWrapping
-        normalMapRef.current.repeat.set(10, 10)
-        normalMapRef.current.needsUpdate = true
-      }
+      normalMapRef.current.image = normalCanvas
+      normalMapRef.current.wrapS = THREE.RepeatWrapping
+      normalMapRef.current.wrapT = THREE.RepeatWrapping
+      normalMapRef.current.repeat.set(10, 10)
+      normalMapRef.current.needsUpdate = true
     }
   }, [canvas])
 
@@ -105,6 +101,10 @@ export default function SandGround() {
   useFrame(() => {
     const ctx = canvas.getContext('2d')
     if (!ctx || !baseTextureDataRef.current) return
+
+    // Zustand 상태 직접 가져오기 (closure 문제 해결)
+    const state = useGardenStore.getState()
+    const { stones, strokes, currentStrokePoints, updateStrokeOpacity, removeStroke } = state
 
     // 페이드아웃 처리
     const now = Date.now()
