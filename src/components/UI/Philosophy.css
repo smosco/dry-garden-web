@@ -1,0 +1,68 @@
+/* Philosophy - 명언 표시 */
+.philosophy {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  z-index: 200;
+}
+
+.philosophy.visible {
+  opacity: 1;
+}
+
+.philosophy-ja {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 12px 0;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  letter-spacing: 4px;
+}
+
+.philosophy-ko {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 16px 0;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.philosophy-stage {
+  font-size: 11px;
+  color: rgba(212, 197, 176, 0.6);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* 애니메이션 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.philosophy.visible {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .philosophy-ko {
+    font-size: 18px;
+    padding: 0 24px;
+  }
+
+  .philosophy-ja {
+    font-size: 12px;
+  }
+}

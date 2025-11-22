@@ -1,109 +1,102 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
-import { EffectComposer, Bloom, Vignette, ToneMapping } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import Ground from './Ground'
-import Rake from './Rake'
+import SandGround from './SandGround'
+import Stone from './Stone'
 import RakeController from './RakeController'
-import RakePatterns from './RakePatterns'
-import StoneTower from './StoneTower'
-import DecorativeRocks from './DecorativeRocks'
-import Bamboo from './Bamboo'
+import WoodenFrame from './WoodenFrame'
+import { useGardenStore } from '../stores/useGardenStore'
 
 /**
- * ZenGarden - Main 3D scene component
- * Provides the canvas, camera, lighting, and controls for the zen garden experience
+ * ZenGarden - 메인 3D 씬
+ *
+ * 젠가든의 본질:
+ * - 단순함 속의 깊이
+ * - 여백의 미
+ * - 명상적 분위기
  */
 export default function ZenGarden() {
+  const { stones, activeTool } = useGardenStore()
+
   return (
     <Canvas
       camera={{
-        position: [0, 5, 10],
-        fov: 50,
+        position: [0, 8, 8],
+        fov: 45,
         near: 0.1,
-        far: 1000,
+        far: 100,
       }}
       shadows
-      dpr={[1, 2]} // Device pixel ratio for crisp rendering
+      dpr={[1, 2]}
+      style={{ background: '#1a1a1a' }}
     >
-      {/* Ambient light for overall scene illumination */}
-      <ambientLight intensity={0.4} />
+      {/* 은은한 조명 - 새벽/해질녘 분위기 */}
+      <ambientLight intensity={0.3} color="#e8dcc8" />
 
-      {/* Directional light (sun) for shadows */}
+      {/* 메인 조명 (태양) */}
       <directionalLight
-        position={[10, 10, 5]}
-        intensity={1}
+        position={[5, 10, 5]}
+        intensity={0.8}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        shadow-camera-far={30}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-8}
+        shadow-bias={-0.0001}
       />
 
-      {/* Soft fill light from below */}
+      {/* 부드러운 채움광 */}
       <hemisphereLight
-        color="#ffffff"
-        groundColor="#8a7a6d"
-        intensity={0.5}
+        color="#ffeedd"
+        groundColor="#8b7355"
+        intensity={0.4}
       />
 
-      {/* Environment map for realistic reflections */}
+      {/* 환경 맵 - 따뜻한 석양 */}
       <Environment preset="sunset" />
 
-      {/* Camera controls - orbit around the garden */}
+      {/* 카메라 컨트롤 - view 모드에서만 활성화 */}
       <OrbitControls
+        enabled={activeTool === 'view'}
         enableDamping
         dampingFactor={0.05}
         minDistance={5}
-        maxDistance={30}
-        maxPolarAngle={Math.PI / 2.2} // Prevent camera from going below ground
+        maxDistance={20}
+        maxPolarAngle={Math.PI / 2.5}
+        minPolarAngle={Math.PI / 6}
         target={[0, 0, 0]}
       />
 
-      {/* Zen garden sand ground */}
-      <Ground />
+      {/* 나무 틀 (가레산스이 미니어처) */}
+      <WoodenFrame />
 
-      {/* Rake patterns on the sand */}
-      <RakePatterns />
+      {/* 모래 바닥 (패턴 포함) */}
+      <SandGround />
 
-      {/* Interactive rake */}
-      <Rake />
+      {/* 돌들 */}
+      {stones.map((stone) => (
+        <Stone key={stone.id} stone={stone} />
+      ))}
 
-      {/* Rake interaction controller */}
+      {/* 갈퀴 컨트롤러 */}
       <RakeController />
 
-      {/* Decorative elements */}
-      <StoneTower position={[-5, 0, -3]} scale={1.2} />
-      <StoneTower position={[6, 0, 4]} scale={0.8} />
-
-      <DecorativeRocks position={[-3, 0, 5]} count={4} />
-      <DecorativeRocks position={[4, 0, -5]} count={3} />
-      <DecorativeRocks position={[0, 0, -7]} count={5} />
-
-      <Bamboo position={[-7, 0, 6]} height={2.5} count={4} />
-      <Bamboo position={[7, 0, -2]} height={2} count={3} />
-
-      {/* Post-processing effects for meditative atmosphere */}
+      {/* 후처리 효과 - 명상적 분위기 */}
       <EffectComposer>
-        {/* Soft bloom for dreamy light */}
         <Bloom
-          intensity={0.3}
-          luminanceThreshold={0.8}
+          intensity={0.2}
+          luminanceThreshold={0.9}
           luminanceSmoothing={0.9}
           blendFunction={BlendFunction.ADD}
         />
-
-        {/* Vignette for focus */}
         <Vignette
           offset={0.3}
-          darkness={0.5}
+          darkness={0.6}
           blendFunction={BlendFunction.NORMAL}
         />
-
-        {/* Tone mapping (must be last) */}
-        <ToneMapping />
       </EffectComposer>
     </Canvas>
   )
