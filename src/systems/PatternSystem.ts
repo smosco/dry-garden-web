@@ -18,6 +18,107 @@ export const TEXTURE_SIZE = 1024;
 export const GARDEN_SIZE = 10; // 정원 크기 (-5 ~ 5)
 
 /**
+ * Catmull-Rom Spline - 부드러운 곡선 생성
+ * 모든 점을 정확히 지나가는 부드러운 곡선
+ */
+function catmullRomSpline(
+  p0: THREE.Vector2,
+  p1: THREE.Vector2,
+  p2: THREE.Vector2,
+  p3: THREE.Vector2,
+  t: number,
+  tension: number = 0.5
+): THREE.Vector2 {
+  const t2 = t * t;
+  const t3 = t2 * t;
+
+  const v0 = (p2.x - p0.x) * tension;
+  const v1 = (p3.x - p1.x) * tension;
+  const w0 = (p2.y - p0.y) * tension;
+  const w1 = (p3.y - p1.y) * tension;
+
+  const x =
+    (2 * p1.x - 2 * p2.x + v0 + v1) * t3 +
+    (-3 * p1.x + 3 * p2.x - 2 * v0 - v1) * t2 +
+    v0 * t +
+    p1.x;
+
+  const y =
+    (2 * p1.y - 2 * p2.y + w0 + w1) * t3 +
+    (-3 * p1.y + 3 * p2.y - 2 * w0 - w1) * t2 +
+    w0 * t +
+    p1.y;
+
+  return new THREE.Vector2(x, y);
+}
+
+/**
+ * 포인트 간격 줄이기 (Douglas-Peucker 간소화)
+ * 너무 촘촘한 점들을 제거하여 부드러운 곡선이 잘 작동하도록
+ */
+function simplifyPoints(
+  points: THREE.Vector2[],
+  minDistance: number = 0.15
+): THREE.Vector2[] {
+  if (points.length < 3) return points;
+
+  const simplified: THREE.Vector2[] = [points[0]];
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const lastPoint = simplified[simplified.length - 1];
+    const dist = lastPoint.distanceTo(points[i]);
+
+    if (dist >= minDistance) {
+      simplified.push(points[i]);
+    }
+  }
+
+  // 마지막 점은 항상 추가
+  simplified.push(points[points.length - 1]);
+
+  return simplified;
+}
+
+/**
+ * 포인트 배열을 부드러운 곡선으로 변환
+ */
+export function smoothPoints(
+  points: THREE.Vector2[],
+  segments: number = 16
+): THREE.Vector2[] {
+  if (points.length < 2) return points;
+  if (points.length === 2) return points;
+
+  // 1단계: 너무 촘촘한 점들 제거
+  const simplified = simplifyPoints(points, 0.12);
+
+  if (simplified.length < 3) return simplified;
+
+  const smoothed: THREE.Vector2[] = [];
+
+  // 첫 점 추가
+  smoothed.push(simplified[0]);
+
+  // 중간 점들을 Catmull-Rom으로 보간
+  for (let i = 0; i < simplified.length - 1; i++) {
+    const p0 = simplified[Math.max(0, i - 1)];
+    const p1 = simplified[i];
+    const p2 = simplified[i + 1];
+    const p3 = simplified[Math.min(simplified.length - 1, i + 2)];
+
+    for (let t = 0; t < 1; t += 1 / segments) {
+      const point = catmullRomSpline(p0, p1, p2, p3, t);
+      smoothed.push(point);
+    }
+  }
+
+  // 마지막 점 추가
+  smoothed.push(simplified[simplified.length - 1]);
+
+  return smoothed;
+}
+
+/**
  * 월드 좌표를 텍스처 좌표로 변환
  */
 export function worldToTexture(x: number, z: number): [number, number] {
@@ -129,6 +230,9 @@ export function drawRakeStroke(
   // 그릴 당시의 돌 위치 사용 (스냅샷)
   const stonesAtDrawTime = stroke.stonesSnapshot || stones;
 
+  // 부드러운 곡선으로 변환 (Catmull-Rom Spline)
+  const smoothedPoints = smoothPoints(stroke.points, 16);
+
   // 각 이빨에 대해 평행선 그리기
   for (let t = 0; t < numTeeth; t++) {
     const offset = (t - (numTeeth - 1) / 2) * toothSpacing;
@@ -136,15 +240,15 @@ export function drawRakeStroke(
     ctx.beginPath();
     let pathStarted = false;
 
-    for (let i = 0; i < stroke.points.length; i++) {
-      const point = stroke.points[i];
+    for (let i = 0; i < smoothedPoints.length; i++) {
+      const point = smoothedPoints[i];
 
       // 선의 방향에 수직으로 기본 오프셋 계산
       let perpX = 0,
         perpY = 0;
 
-      if (i < stroke.points.length - 1) {
-        const next = stroke.points[i + 1];
+      if (i < smoothedPoints.length - 1) {
+        const next = smoothedPoints[i + 1];
         const dx = next.x - point.x;
         const dy = next.y - point.y;
         const len = Math.sqrt(dx * dx + dy * dy);
@@ -153,7 +257,7 @@ export function drawRakeStroke(
           perpY = dx / len;
         }
       } else if (i > 0) {
-        const prev = stroke.points[i - 1];
+        const prev = smoothedPoints[i - 1];
         const dx = point.x - prev.x;
         const dy = point.y - prev.y;
         const len = Math.sqrt(dx * dx + dy * dy);
