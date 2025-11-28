@@ -29,15 +29,16 @@ export default function ZenGarden() {
       }}
       shadows
       dpr={[1, 2]}
-      style={{ background: '#1a1a1a' }}
+      style={{ background: '#0a0a0a' }}
     >
-      {/* 은은한 조명 - 새벽/해질녘 분위기 */}
-      <ambientLight intensity={0.3} color="#e8dcc8" />
+      {/* 은은한 조명 - 따뜻한 실내 조명 분위기 */}
+      <ambientLight intensity={0.5} color="#f5f0e8" />
 
-      {/* 메인 조명 (태양) */}
+      {/* 메인 조명 (따뜻한 스팟 조명) */}
       <directionalLight
-        position={[5, 10, 5]}
-        intensity={0.8}
+        position={[3, 12, 4]}
+        intensity={1.2}
+        color="#fff5e6"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-far={30}
@@ -50,9 +51,9 @@ export default function ZenGarden() {
 
       {/* 부드러운 채움광 */}
       <hemisphereLight
-        color="#ffeedd"
-        groundColor="#8b7355"
-        intensity={0.4}
+        color="#fffaf0"
+        groundColor="#6b5d4f"
+        intensity={0.6}
       />
 
       {/* 환경 맵 - 따뜻한 석양 */}

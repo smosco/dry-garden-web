@@ -55,8 +55,8 @@ export default function SandGround() {
     // 메인 텍스처 초기화
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      // 가레산스이 모래색 - 밝은 회백색 (시라카와 자갈 느낌)
-      ctx.fillStyle = '#d4d0c8'
+      // 가레산스이 모래색 - 따뜻한 밝은 회백색 (시라카와 자갈 느낌)
+      ctx.fillStyle = '#e8e4dc'
       ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
 
       const imageData = ctx.getImageData(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
@@ -139,8 +139,8 @@ export default function SandGround() {
       <meshStandardMaterial
         map={texture}
         normalMap={normalMap}
-        normalScale={new THREE.Vector2(0.2, 0.2)}
-        roughness={0.95}
+        normalScale={new THREE.Vector2(0.15, 0.15)}
+        roughness={0.98}
         metalness={0}
       />
     </mesh>

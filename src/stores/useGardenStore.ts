@@ -19,6 +19,7 @@ export interface RakeStroke {
   points: THREE.Vector2[]     // 2D 포인트 배열 (x, z)
   timestamp: number
   opacity: number             // 페이드아웃용
+  stonesSnapshot: Stone[]     // 그릴 당시의 돌 위치 스냅샷
 }
 
 /**
@@ -145,18 +146,27 @@ export const useGardenStore = create<GardenStore>((set, get) => ({
 
   // 갈퀴질 종료
   endStroke: () => {
-    const { currentStrokePoints, strokes } = get()
+    const { currentStrokePoints, strokes, stones } = get()
 
     if (currentStrokePoints.length < 2) {
       set({ isRaking: false, currentStrokePoints: [] })
       return
     }
 
+    // 현재 돌 위치의 스냅샷 저장 (깊은 복사)
+    const stonesSnapshot = stones.map(s => ({
+      id: s.id,
+      position: [...s.position] as [number, number],
+      radius: s.radius,
+      scale: s.scale,
+    }))
+
     const newStroke: RakeStroke = {
       id: `stroke-${Date.now()}`,
       points: currentStrokePoints,
       timestamp: Date.now(),
       opacity: 1.0,
+      stonesSnapshot,
     }
 
     set({

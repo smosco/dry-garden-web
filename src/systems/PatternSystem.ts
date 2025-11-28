@@ -59,8 +59,7 @@ function deflectPointByStones(
 
     if (distance < influenceRadius && distance > stone.radius) {
       // 영향력 계산 (가까울수록 강함)
-      const influence =
-        1 - (distance - stone.radius) / (influenceRadius - stone.radius);
+      const influence = 1 - (distance - stone.radius) / (influenceRadius - stone.radius);
       const smoothInfluence = influence * influence; // 부드러운 곡선
 
       // 동심원 방향의 접선 벡터
@@ -75,32 +74,44 @@ function deflectPointByStones(
       const deflectAmount = offset * smoothInfluence * 0.8;
 
       totalDeflectX +=
-        tangentX * deflectAmount +
-        normalX * Math.abs(offset) * smoothInfluence * 0.3;
+        tangentX * deflectAmount + normalX * Math.abs(offset) * smoothInfluence * 0.3;
       totalDeflectY +=
-        tangentY * deflectAmount +
-        normalY * Math.abs(offset) * smoothInfluence * 0.3;
+        tangentY * deflectAmount + normalY * Math.abs(offset) * smoothInfluence * 0.3;
       totalInfluence += smoothInfluence;
     }
   }
 
   if (totalInfluence > 0) {
-    return [
-      x + totalDeflectX / totalInfluence,
-      y + totalDeflectY / totalInfluence,
-    ];
+    return [x + totalDeflectX / totalInfluence, y + totalDeflectY / totalInfluence];
   }
 
   return [x, y];
 }
 
 /**
+ * 점이 돌 내부에 있는지 확인
+ */
+function isPointInsideStone(x: number, y: number, stones: Stone[]): boolean {
+  for (const stone of stones) {
+    const dx = x - stone.position[0];
+    const dy = y - stone.position[1];
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    // 돌 반지름보다 작으면 내부
+    if (distance < stone.radius) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * 갈퀴 획을 텍스처에 그리기 (돌 주위 휘어짐 적용)
+ * @param stones 현재 돌 위치가 아닌, stroke에 저장된 스냅샷 사용
  */
 export function drawRakeStroke(
   ctx: CanvasRenderingContext2D,
   stroke: RakeStroke,
-  stones: Stone[],
+  stones: Stone[], // 이제 사용 안함 (stroke.stonesSnapshot 사용)
   numTeeth: number = 5
 ): void {
   if (stroke.points.length < 2) return;
@@ -115,11 +126,15 @@ export function drawRakeStroke(
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // 그릴 당시의 돌 위치 사용 (스냅샷)
+  const stonesAtDrawTime = stroke.stonesSnapshot || stones;
+
   // 각 이빨에 대해 평행선 그리기
   for (let t = 0; t < numTeeth; t++) {
     const offset = (t - (numTeeth - 1) / 2) * toothSpacing;
 
     ctx.beginPath();
+    let pathStarted = false;
 
     for (let i = 0; i < stroke.points.length; i++) {
       const point = stroke.points[i];
@@ -152,19 +167,33 @@ export function drawRakeStroke(
       let worldX = point.x + perpX * offset;
       let worldY = point.y + perpY * offset;
 
-      // 돌에 의한 휘어짐 적용
-      [worldX, worldY] = deflectPointByStones(worldX, worldY, stones, offset);
+      // 돌에 의한 휘어짐 적용 (스냅샷 위치 기준)
+      [worldX, worldY] = deflectPointByStones(worldX, worldY, stonesAtDrawTime, offset);
+
+      // 돌 내부에 있으면 스킵 (스냅샷 위치 기준)
+      if (isPointInsideStone(worldX, worldY, stonesAtDrawTime)) {
+        // 현재 경로가 있으면 그리고 새로 시작
+        if (pathStarted) {
+          ctx.stroke();
+          ctx.beginPath();
+          pathStarted = false;
+        }
+        continue;
+      }
 
       const [texX, texY] = worldToTexture(worldX, worldY);
 
-      if (i === 0) {
+      if (!pathStarted) {
         ctx.moveTo(texX, texY);
+        pathStarted = true;
       } else {
         ctx.lineTo(texX, texY);
       }
     }
 
-    ctx.stroke();
+    if (pathStarted) {
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
@@ -186,71 +215,14 @@ export function drawCurrentStroke(
     points,
     timestamp: Date.now(),
     opacity: 0.5,
+    stonesSnapshot: stones, // 현재 그리는 중이므로 현재 돌 위치 사용
   };
 
   drawRakeStroke(ctx, tempStroke, stones, numTeeth);
 }
 
-/**
- * 미즈몬(水紋) - 돌 주위 동심원 패턴
- * 갈퀴질이 없는 돌 주위에만 표시
- */
-export function drawMizumon(
-  ctx: CanvasRenderingContext2D,
-  stone: Stone,
-  hasNearbyStrokes: boolean,
-  numRings: number = 4
-): void {
-  const [centerX, centerY] = worldToTexture(
-    stone.position[0],
-    stone.position[1]
-  );
-  const baseRadius = stone.radius * (TEXTURE_SIZE / GARDEN_SIZE);
-  const ringSpacing = 15;
-
-  ctx.save();
-  ctx.strokeStyle = '#8b7355';
-  ctx.lineWidth = 2.5;
-
-  // 근처에 갈퀴 자국이 있으면 미즈몬을 약하게 표시
-  const baseAlpha = hasNearbyStrokes ? 0.3 : 0.6;
-
-  for (let i = 1; i <= numRings; i++) {
-    const radius = baseRadius + i * ringSpacing;
-    const alpha = baseAlpha - (i / numRings) * (baseAlpha * 0.5);
-
-    ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
-/**
- * 돌 근처에 갈퀴 자국이 있는지 확인
- */
-function hasStrokesNearStone(
-  stone: Stone,
-  strokes: RakeStroke[],
-  currentPoints: THREE.Vector2[]
-): boolean {
-  const checkRadius = stone.radius * 3;
-
-  const allPoints = [...strokes.flatMap((s) => s.points), ...currentPoints];
-
-  for (const point of allPoints) {
-    const dx = point.x - stone.position[0];
-    const dy = point.y - stone.position[1];
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance < checkRadius) {
-      return true;
-    }
-  }
-
-  return false;
-}
+// 미즈몬(동심원) 기능 제거됨
+// 사용자가 직접 돌 주위에 패턴을 그리도록 함
 
 /**
  * 전체 패턴 텍스처 렌더링
@@ -266,18 +238,12 @@ export function renderPatternTexture(
   // 1. 기본 모래 텍스처 복원 (랜덤 노이즈 재생성 방지)
   ctx.putImageData(baseTextureData, 0, 0);
 
-  // 2. 돌 주위 동심원 (미즈몬) - 갈퀴 획 아래에 먼저 그림
-  for (const stone of stones) {
-    const hasNearby = hasStrokesNearStone(stone, strokes, currentPoints);
-    drawMizumon(ctx, stone, hasNearby);
-  }
-
-  // 3. 완료된 갈퀴 획들 (돌 주위 휘어짐 적용)
+  // 2. 완료된 갈퀴 획들 (그릴 당시 돌 위치 기준으로 렌더링)
   for (const stroke of strokes) {
     drawRakeStroke(ctx, stroke, stones);
   }
 
-  // 4. 현재 그리고 있는 획
+  // 3. 현재 그리고 있는 획 (현재 돌 위치 기준)
   if (currentPoints.length >= 2) {
     drawCurrentStroke(ctx, currentPoints, stones);
   }
